@@ -3,64 +3,70 @@ class EmployeeModel extends connectDB {
     
     // 1. Lấy danh sách: Đảm bảo lấy nv.* để có đủ Email, DiaChi...
     public function getList($keyword = "") {
-    // 1. Câu lệnh SQL cơ bản lấy dữ liệu và Join với bảng bộ phận
-    $sql = "SELECT nv.*, bp.TenBoPhan 
-            FROM NhanVien nv 
-            LEFT JOIN hotels_departments bp ON nv.MaBoPhan = bp.MaBoPhan";
-    
-    // 2. Nếu có từ khóa tìm kiếm, thêm điều kiện WHERE
-    if (!empty($keyword)) {
-        // Tìm theo Mã nhân viên HOẶC Tên nhân viên
-        $sql .= " WHERE nv.MaNhanVien LIKE '%$keyword%' 
-                  OR nv.TenNhanVien LIKE '%$keyword%'";
+        $sql = "SELECT nv.*, bp.TenBoPhan 
+                FROM hotels_employees nv 
+                LEFT JOIN hotels_departments bp ON nv.MaBoPhan = bp.MaBoPhan";
+        
+        if (!empty($keyword)) {
+            $sql .= " WHERE nv.MaNhanVien LIKE '%$keyword%' 
+                      OR nv.TenNhanVien LIKE '%$keyword%' 
+                      OR nv.CMND_CCCD LIKE '%$keyword%'
+                      OR nv.SoDienThoaiNV LIKE '%$keyword%'";
+        }
+        
+        return mysqli_query($this->con, $sql);
     }
-
-    $sql .= " ORDER BY nv.MaNhanVien DESC"; // Sắp xếp mới nhất lên đầu
-
-    return mysqli_query($this->con, $sql);
-}
 
     public function getDepartments() {
         return mysqli_query($this->con, "SELECT MaBoPhan, TenBoPhan FROM hotels_departments");
     }
 
     // 2. Hàm Lưu: Đã bổ sung đầy đủ EmailNhanVien và DiaChi
-    public function save($data, $isEdit) {
-        $ma = $data['MaNhanVien'];
-        $ho = $data['HoNhanVien'];
-        $ten = $data['TenNhanVien'];
-        $cccd = $data['CMND_CCCD'];
-        $sdt = $data['SoDienThoaiNV'];
-        $email = $data['EmailNhanVien']; // TRƯỜNG MỚI
-        $chucdanh = $data['ChucDanhNV'];
-        $mabp = !empty($data['MaBoPhan']) ? "'" . $data['MaBoPhan'] . "'" : "NULL";
-        $ngayvao = !empty($data['NgayVaoLam']) ? "'" . $data['NgayVaoLam'] . "'" : "NULL";
-        $diachi = $data['DiaChi']; // TRƯỜNG MỚI
+   public function save($data, $isEdit) {
+    $ma = mysqli_real_escape_string($this->con, $data['MaNhanVien']);
+    $ho = mysqli_real_escape_string($this->con, $data['HoNhanVien']);
+    $ten = mysqli_real_escape_string($this->con, $data['TenNhanVien']);
+    $cccd = mysqli_real_escape_string($this->con, $data['CMND_CCCD']);
+    $sdt = mysqli_real_escape_string($this->con, $data['SoDienThoaiNV']);
+    $email = mysqli_real_escape_string($this->con, $data['EmailNhanVien']);
+    $chucdanh = mysqli_real_escape_string($this->con, $data['ChucDanhNV']);
+    $diachi = mysqli_real_escape_string($this->con, $data['DiaChi']);
 
-        if ($isEdit == "0") {
-            // INSERT đầy đủ 10 cột
-            $sql = "INSERT INTO hotels_employees (MaNhanVien, HoNhanVien, TenNhanVien, CMND_CCCD, SoDienThoaiNV, EmailNhanVien, ChucDanhNV, MaBoPhan, NgayVaoLam, DiaChi) 
-                    VALUES ('$ma', '$ho', '$ten', '$cccd', '$sdt', '$email', '$chucdanh', $mabp, $ngayvao, '$diachi')";
-        } else {
-            // UPDATE đầy đủ các cột
-            $sql = "UPDATE hotels_employees SET 
-                        HoNhanVien = '$ho', 
-                        TenNhanVien = '$ten', 
-                        CMND_CCCD = '$cccd', 
-                        SoDienThoaiNV = '$sdt', 
-                        EmailNhanVien = '$email',
-                        ChucDanhNV = '$chucdanh', 
-                        MaBoPhan = $mabp, 
-                        NgayVaoLam = $ngayvao,
-                        DiaChi = '$diachi' 
-                    WHERE MaNhanVien = '$ma'";
-        }
-        
-        return mysqli_query($this->con, $sql);
+    $mabp   = !empty($data['MaBoPhan']) ? "'" . $data['MaBoPhan'] . "'" : "NULL";
+    $ngayvao = !empty($data['NgayVaoLam']) ? "'" . $data['NgayVaoLam'] . "'" : "NULL";
+
+    if($isEdit == "0") {
+        // INSERT
+        $sql = "INSERT INTO hotels_employees 
+                (MaNhanVien, HoNhanVien, TenNhanVien, CMND_CCCD, SoDienThoaiNV, EmailNhanVien, ChucDanhNV, MaBoPhan, NgayVaoLam, DiaChi)
+                VALUES 
+                ('$ma','$ho','$ten','$cccd','$sdt','$email','$chucdanh',$mabp,$ngayvao,'$diachi')";
+    } else {
+        // UPDATE
+        $sql = "UPDATE hotels_employees SET
+                HoNhanVien='$ho',
+                TenNhanVien='$ten',
+                CMND_CCCD='$cccd',
+                SoDienThoaiNV='$sdt',
+                EmailNhanVien='$email',
+                ChucDanhNV='$chucdanh',
+                MaBoPhan=$mabp,
+                NgayVaoLam=$ngayvao,
+                DiaChi='$diachi'
+                WHERE MaNhanVien='$ma'";
     }
 
-    public function delete($id) {
-        return mysqli_query($this->con, "DELETE FROM hotels_employees WHERE MaNhanVien = '$id'");
+    // DEBUG để thấy lỗi rõ ràng
+    if(!mysqli_query($this->con,$sql)){
+        die("SQL ERROR: " . mysqli_error($this->con) . "<br>Query: " . $sql);
+    }
+
+    return true;
+}
+   public function delete($id) {
+    // Câu lệnh xóa dựa trên khóa chính MaNhanVien
+    $sql = "DELETE FROM hotels_employees WHERE MaNhanVien = '$id'";
+    
+    return mysqli_query($this->con, $sql);
     }
 }
-?>
