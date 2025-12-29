@@ -28,4 +28,26 @@ class AdminController extends controller {
         $this->view("Master", ["content" => $content]);
     }
 
+    // 3. Trang Quản lý nhân viên
+    public function employee() {
+        $model = $this->model("EmployeeModel");
+    
+    // Nhận từ khóa tìm kiếm
+        $keyword = isset($_POST['keyword']) ? $_POST['keyword'] : "";
+    
+        $employees = $model->getList($keyword);
+        $departments = $model->getDepartments();
+
+        ob_start();
+    // Gọi đúng file view trong thư mục Pages/Employee.php
+         $this->view("Pages/Employee", [
+        "employees" => $employees,
+        "departments" => $departments
+        ]); 
+         $content = ob_get_clean();
+
+    // Đưa nội dung vào Master Layout
+        $this->view("Master", ["content" => $content]);
+   }
+
 }

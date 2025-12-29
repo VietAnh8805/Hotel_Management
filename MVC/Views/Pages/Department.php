@@ -12,11 +12,15 @@
                         <i class="fas fa-th-large"></i>Quản lý Bộ phận
                     </a>
                 </li>
-                <li><a href="#"><i class="fas fa-users"></i>Quản lý Nhân viên</a></li>
+                <li>
+                    <a href="?controller=AdminController&action=employee">
+                        <i class="fas fa-users"></i>Quản lý Nhân viên
+                    </a>
+                </li>
                 <li><a href="#"><i class="fas fa-user-shield"></i>Quản lý Tài khoản</a></li>
                 <li><a href="#"><i class="fas fa-bed"></i>Quản lý Loại phòng</a></li>
                 <li><a href="#"><i class="fas fa-door-open"></i>Quản lý Phòng</a></li>
-                <li class="active">
+                <li>
                     <a href="?controller=ServiceController&action=index">
                         <i class="fas fa-concierge-bell"></i>Quản lý Dịch vụ
                     </a>

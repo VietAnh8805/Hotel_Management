@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="./Public/Css/login_style.css">
     <link rel="stylesheet" href="./Public/Css/admin_style.css"> 
     <link rel="stylesheet" href="./Public/Css/department_style.css">
+    <link rel="stylesheet" href="./Public/Css/employee_style.css">
 </head>
 <body>
     <body class="<?php echo isset($_GET['controller']) ? $_GET['controller'] : 'Default'; ?>">
