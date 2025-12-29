@@ -1,5 +1,4 @@
 <div class="admin-wrapper">
-    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-header">
             <i class="fas fa-hotel"></i><span>Hotel Admin</span>
@@ -28,7 +27,6 @@
         </div>
     </aside>
 
-    <!-- MAIN -->
     <main class="main-content">
         <header class="top-header">
             <div class="user-info">Chào mừng: <strong>Quản trị viên</strong></div>
@@ -36,7 +34,6 @@
 
         <section class="content-body">
 
-            <!-- TOOLBAR -->
             <div class="toolbar" style="display:flex;justify-content:space-between;align-items:center;">
                 <div style="display:flex;gap:15px;align-items:center;">
                     <button class="btn btn-primary" onclick="toggleForm(true)">
@@ -62,7 +59,28 @@
                 </div>
             </div>
 
-            <!-- FORM NHÂN VIÊN -->
+            <div id="importSection" class="info-card" style="display:none; margin: 20px 0; border: 1px dashed #38bdf8; padding: 20px; background: rgba(56, 189, 248, 0.05);">
+                <h4 style="color: #38bdf8; margin-bottom: 15px;">
+                    <i class="fas fa-file-import"></i> Import Nhân viên từ Excel
+                </h4>
+                
+                <form action="?controller=EmployeeController&action=importExcel" method="POST" enctype="multipart/form-data" style="display:flex; align-items:center; gap:15px;">
+                    <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                        <input type="file" name="excel_file" class="form-control" accept=".xls,.xlsx" required 
+                               style="background: #2d3239; border: 1px solid #444; color: white;">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Bắt đầu Import
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="toggleImport(false)">
+                        Hủy
+                    </button>
+                </form>
+                <p style="font-size: 0.85rem; color: #888; margin-top: 10px;">
+                    * Chú ý: File Excel phải có các cột đúng thứ tự: Mã NV, Tên, Họ, Chức danh, SĐT, Email, Ngày vào, Địa chỉ, Mã BP, CCCD.
+                </p>
+            </div>
+
             <div id="employeeForm" class="info-card" style="display:none;margin-top:20px;">
                 <h4 id="formTitle">Thêm nhân viên mới</h4>
 
@@ -98,7 +116,6 @@
                 </form>
             </div>
 
-            <!-- TABLE -->
             <div class="table-container" style="margin-top:20px;overflow-x:auto;">
                 <table class="admin-table" style="width:100%;min-width:1200px;">
                     <thead>
@@ -141,10 +158,35 @@
 </div>
 
 <script>
+function toggleImport(show) {
+    const importBox = document.getElementById("importSection");
+    const tableContainer = document.querySelector(".table-container");
+    const toolbar = document.querySelector(".toolbar");
+    const employeeForm = document.getElementById("employeeForm");
+
+    if (show) {
+        importBox.style.display = "block";
+        tableContainer.style.display = "none";
+        toolbar.style.display = "none";
+        employeeForm.style.display = "none";
+    } else {
+        importBox.style.display = "none";
+        tableContainer.style.display = "block";
+        toolbar.style.display = "flex";
+    }
+}
+
 function toggleForm(show){
-    document.getElementById("employeeForm").style.display = show ? "block" : "none";
-    document.querySelector(".table-container").style.display = show ? "none":"block";
-    document.querySelector(".toolbar").style.display = show ? "none":"flex";
+    const employeeForm = document.getElementById("employeeForm");
+    const tableContainer = document.querySelector(".table-container");
+    const toolbar = document.querySelector(".toolbar");
+    const importBox = document.getElementById("importSection");
+
+    employeeForm.style.display = show ? "block" : "none";
+    tableContainer.style.display = show ? "none" : "block";
+    toolbar.style.display = show ? "none" : "flex";
+    importBox.style.display = "none"; 
+
     if(show) document.getElementById("mainEmpForm").reset();
 }
 

@@ -42,96 +42,109 @@ class EmployeeController extends controller {
         echo "<script>window.location.href='?controller=EmployeeController&action=index';</script>";
     }
 
-public function exportExcel() {
-    $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : "";
-    $employees = $this->empModel->getList($keyword);
+    public function exportExcel() {
+        $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : "";
+        $employees = $this->empModel->getList($keyword);
 
-    // Tên file
-    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
-    header('Content-Disposition: attachment; filename=NhanVien.xls');
-    
-    echo '<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />';
-    echo "<table border='1'>
-            <tr style='background:#d5d5d5;font-weight:bold'>
-                <th>Mã NV</th>
-                <th>Họ</th>
-                <th>Tên</th>
-                <th>Bộ Phận</th>
-                <th>CCCD</th>
-                <th>SĐT</th>
-                <th>Email</th>
-                <th>Chức Danh</th>
-                <th>Ngày Vào</th>
-                <th>Địa Chỉ</th>
-            </tr>";
+        header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+        header('Content-Disposition: attachment; filename=NhanVien.xls');
+        
+        echo '<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />';
+        echo "<table border='1'>
+                <tr style='background:#d5d5d5;font-weight:bold'>
+                    <th>Mã NV</th>
+                    <th>Tên</th>
+                    <th>Họ</th>
+                    <th>Chức Danh</th>
+                    <th>SĐT</th>
+                    <th>Email</th>
+                    <th>Ngày Vào</th>
+                    <th>Địa Chỉ</th>
+                    <th>Bộ Phận</th>
+                    <th>CCCD</th>
+                </tr>";
 
-    while ($row = mysqli_fetch_assoc($employees)) {
-        echo "<tr>
-                <td>{$row['MaNhanVien']}</td>
-                <td>{$row['HoNhanVien']}</td>
-                <td>{$row['TenNhanVien']}</td>
-                <td>{$row['TenBoPhan']}</td>
-                <td>{$row['CMND_CCCD']}</td>
-                <td>{$row['SoDienThoaiNV']}</td>
-                <td>{$row['EmailNhanVien']}</td>
-                <td>{$row['ChucDanhNV']}</td>
-                <td>{$row['NgayVaoLam']}</td>
-                <td>{$row['DiaChi']}</td>
-            </tr>";
+        while ($row = mysqli_fetch_assoc($employees)) {
+            echo "<tr>
+                    <td>{$row['MaNhanVien']}</td>
+                    <td>{$row['TenNhanVien']}</td>
+                    <td>{$row['HoNhanVien']}</td>
+                    <td>{$row['ChucDanhNV']}</td>
+                    <td>{$row['SoDienThoaiNV']}</td>
+                    <td>{$row['EmailNhanVien']}</td>
+                    <td>{$row['NgayVaoLam']}</td>
+                    <td>{$row['DiaChi']}</td>
+                    <td>{$row['TenBoPhan']}</td>
+                    <td>{$row['CMND_CCCD']}</td>
+                </tr>";
+        }
+        echo "</table>";
     }
 
-    echo "</table>";
-}
-public function importExcel(){
-    if($_SERVER['REQUEST_METHOD']=="POST" && isset($_FILES['excel_file'])){
-
+   public function importExcel() {
+    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['excel_file'])) {
         $file = $_FILES['excel_file']['tmp_name'];
+        $libPath = dirname(__DIR__, 2) . "/Public/Classes/PHPExcel.php";
 
-        // Load PHPExcel
-        $libPath = dirname(__DIR__,2)."/Public/Classes/PHPExcel.php";
-        if(!file_exists($libPath)) die("Thiếu thư viện tại: ".$libPath);
-        require_once $libPath;
-
-        $obj = PHPExcel_IOFactory::load($file);
-        $sheet = $obj->getSheet(0);
-
-        $model = $this->model("EmployeeModel");
-        $success=0;$duplicate=0;
-
-        $highestRow = $sheet->getHighestRow();
-        $highestColumn = $sheet->getHighestColumn(); // Lấy cột cuối (VD: H, I,...)
-
-        // Tạo mảng tên cột theo header dòng 1
-        $headers = [];
-        for ($col = 'A'; $col <= $highestColumn; $col++) {
-            $headers[] = trim($sheet->getCell($col.'1')->getValue());
+        if (file_exists($libPath)) {
+            require_once $libPath;
+        } else {
+            die("Không tìm thấy thư viện tại: " . $libPath);
         }
 
-        // Import dữ liệu từ dòng 2 đến cuối
-        for($row=2;$row<=$highestRow;$row++){
+        try {
+            $objPHPExcel = PHPExcel_IOFactory::load($file);
+            $sheet = $objPHPExcel->getSheet(0);
+            $highestRow = $sheet->getHighestRow();
 
-            $rowData=[];
+            $successCount = 0;
+            $duplicateCount = 0;
 
-            // Đọc tất cả cột
-            $colIndex = 0;
-            for($col = 'A'; $col <= $highestColumn; $col++){
-                $rowData[$headers[$colIndex]] = trim($sheet->getCell("$col$row")->getValue());
-                $colIndex++;
+            for ($row = 2; $row <= $highestRow; $row++) {
+                $maNV = trim($sheet->getCellByColumnAndRow(0, $row)->getValue());
+                if (empty($maNV)) continue;
+
+                // 1. KIỂM TRA TRÙNG MÃ (Sử dụng hàm checkDuplicate bạn đã có trong Model)
+                if ($this->empModel->checkDuplicate($maNV)) {
+                    $duplicateCount++;
+                    continue; // Nếu trùng thì bỏ qua dòng này, chạy dòng tiếp theo
+                }
+
+                // 2. XỬ LÝ NGÀY THÁNG (Chuyển từ số 44936 về YYYY-MM-DD)
+                $cellNgayVao = $sheet->getCellByColumnAndRow(6, $row)->getValue();
+                if(is_numeric($cellNgayVao)){
+                    $ngayVaoLam = date("Y-m-d", PHPExcel_Shared_Date::ExcelToPHP($cellNgayVao));
+                } else {
+                    $ngayVaoLam = $cellNgayVao;
+                }
+
+                $data = [
+                    'MaNhanVien'    => $maNV,
+                    'TenNhanVien'   => trim($sheet->getCellByColumnAndRow(1, $row)->getValue()),
+                    'HoNhanVien'    => trim($sheet->getCellByColumnAndRow(2, $row)->getValue()),
+                    'ChucDanhNV'    => trim($sheet->getCellByColumnAndRow(3, $row)->getValue()),
+                    'SoDienThoaiNV' => trim($sheet->getCellByColumnAndRow(4, $row)->getValue()),
+                    'EmailNhanVien' => trim($sheet->getCellByColumnAndRow(5, $row)->getValue()),
+                    'NgayVaoLam'    => $ngayVaoLam,
+                    'DiaChi'        => trim($sheet->getCellByColumnAndRow(7, $row)->getValue()),
+                    'MaBoPhan'      => trim($sheet->getCellByColumnAndRow(8, $row)->getValue()),
+                    'CMND_CCCD'     => trim($sheet->getCellByColumnAndRow(9, $row)->getValue()),
+                ];
+
+                if ($this->empModel->save($data, "0")) {
+                    $successCount++;
+                }
             }
+            
+            echo "<script>
+                alert('Import hoàn tất! Thêm mới: $successCount, Bỏ qua trùng: $duplicateCount');
+                window.location.href='?controller=EmployeeController&action=index';
+            </script>";
 
-            $id = $rowData['MaNV'] ?? null;
-            if($id=="") continue;
-
-            if(!$model->checkDuplicate($id)){
-                $model->insertFull($rowData); // ← xử lý insert full trường
-                $success++;
-            }else $duplicate++;
+        } catch (Exception $e) {
+            die("Lỗi: " . $e->getMessage());
         }
-
-        echo "<script>
-            alert('Import hoàn tất! Thêm: $success | Trùng: $duplicate');
-            window.location='?controller=EmployeeController&action=index';
-        </script>";
     }
 }
-}
+} 
+?>

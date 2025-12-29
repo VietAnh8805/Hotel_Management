@@ -69,4 +69,26 @@ class EmployeeModel extends connectDB {
     
     return mysqli_query($this->con, $sql);
     }
+
+    public function importSave($data) {
+    $ma = mysqli_real_escape_string($this->con, $data['MaNhanVien']);
+    
+    // Kiểm tra xem mã nhân viên đã tồn tại chưa
+    $check = mysqli_query($this->con, "SELECT MaNhanVien FROM hotels_employees WHERE MaNhanVien = '$ma'");
+    
+    if (mysqli_num_rows($check) > 0) {
+        // Nếu tồn tại thì UPDATE
+        return $this->save($data, "1"); 
+    } else {
+        // Nếu chưa có thì INSERT
+        return $this->save($data, "0");
+    }
+    }
+
+    public function checkDuplicate($id) {
+    $id = mysqli_real_escape_string($this->con, $id);
+    $sql = "SELECT MaNhanVien FROM hotels_employees WHERE MaNhanVien = '$id'";
+    $result = mysqli_query($this->con, $sql);
+    return mysqli_num_rows($result) > 0;
+}
 }
